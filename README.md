@@ -30,7 +30,6 @@
 ---
 
 ## 🧑‍🎨 GraphQL Schema Highlights
-s
 - **Artwork**
   - `id`, `title`, `description`, `artistName`, `comments`
 - **Comment**
