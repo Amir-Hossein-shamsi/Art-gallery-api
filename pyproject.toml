@@ -11,4 +11,5 @@ dependencies = [
     "motor>=3.7.1",
     "pydantic>=2.11.7",
     "pymongo>=4.13.2",
+    "redis[async]>=6.2.0",
 ]

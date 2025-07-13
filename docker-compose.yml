@@ -1,45 +1,35 @@
-# Specify the Docker Compose file format version
 version: '3.8'
 
-# Define the services (containers) that make up your application
 services:
-  # The FastAPI application service
   api:
-    # Build the image from the Dockerfile in the current directory
     build: .
-    # Name the container for easier identification
     container_name: cosmic_canvas_api
-    # Forward the exposed port 8000 on the container to port 8000 on the host machine
     ports:
       - "8000:8000"
-    # Mount the current directory on the host to /app in the container
-    # This allows for live code reloading without rebuilding the image
     volumes:
       - .:/app
-    # Set environment variables for the application
     environment:
-      # The API will connect to the mongo service at this address
       - MONGO_URL=mongodb://mongo:27017
-    # Specify that the 'api' service depends on the 'mongo' service
-    # This ensures 'mongo' is started before 'api'
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - mongo
+      - redis
 
-  # The MongoDB database service
   mongo:
-    # Use the official MongoDB image from Docker Hub
     image: mongo:4.4
-    # Name the container
     container_name: cosmic_canvas_db
-    # Forward the default MongoDB port
     ports:
       - "27017:27017"
-    # Define a volume to persist database data
-    # This ensures your data isn't lost when the container is stopped or removed
     volumes:
       - mongo-data:/data/db
 
+  redis:
+    image: redis:6-alpine
+    container_name: cosmic_canvas_redis
+    ports:
+      - "6379:6379"
 
 volumes:
   mongo-data:
   api:
+    

@@ -10,6 +10,9 @@ from ariadne import make_executable_schema, ObjectType, QueryType, MutationType,
 from ariadne.asgi import GraphQL
 from motor.motor_asyncio import AsyncIOMotorClient
 from db.database import PyObjectId,ObjectId
+import redis.asyncio as aioredis
+from pymongo.errors import DuplicateKeyError
+import json
 
 
 MONGO_DATABASE_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
@@ -17,6 +20,9 @@ DATABASE_NAME = "cosmic_canvas"
    
 client = AsyncIOMotorClient(MONGO_DATABASE_URL)
 db = client[DATABASE_NAME]
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+
 
 
 query = QueryType()
@@ -26,15 +32,21 @@ artwork = ObjectType("Artwork")
 
 @query.field("all_artworks")
 async def resolve_all_artworks(_, info):
+    cache_key = "all_artworks"
+    cached = await redis_client.get(cache_key)
+    if cached:
+        return json.loads(cached)
     artwork_docs = await db.artworks.find().to_list(length=100)
-    return [
+    result = [
         {
             "id": str(doc["_id"]),
             "title": doc["title"],
             "description": doc.get("description"),
-            "artistName": doc["artist_name"]  
+            "artistName": doc["artist_name"]
         } for doc in artwork_docs
     ]
+    await redis_client.set(cache_key, json.dumps(result), ex=60)
+    return result
 
 @query.field("artwork_by_id")
 async def resolve_artwork_by_id(_, info, id):
@@ -63,15 +75,22 @@ async def resolve_comments(obj, info):
 @mutation.field("createArtwork")
 async def resolve_create_artwork(_, info, title, artistName, description=None):
     artwork_data = ArtworkCreate(title=title, description=description, artist_name=artistName)
-    result = await db.artworks.insert_one(artwork_data.dict())
-    new_artwork_doc = await db.artworks.find_one({"_id": result.inserted_id})
-    artwork = {
-        "id": str(new_artwork_doc["_id"]),
-        "title": new_artwork_doc["title"],
-        "description": new_artwork_doc.get("description"),
-        "artistName": new_artwork_doc["artist_name"]
-    }
-    return {"ok": True, "artwork": artwork}
+    try:
+        result = await db.artworks.insert_one(artwork_data.dict())
+        new_artwork_doc = await db.artworks.find_one({"_id": result.inserted_id})
+        artwork = {
+            "id": str(new_artwork_doc["_id"]),
+            "title": new_artwork_doc["title"],
+            "description": new_artwork_doc.get("description"),
+            "artistName": new_artwork_doc["artist_name"]
+        }
+        await redis_client.delete("all_artworks")  
+        return {"ok": True, "artwork": artwork}
+    except DuplicateKeyError:
+        raise Exception("Artwork with this title already exists.")
+
+
+
 
 @mutation.field("createComment")
 async def resolve_create_comment(_, info, artworkId, author, text):
@@ -163,6 +182,7 @@ async def startup_event():
     try:
         await client.admin.command('ping')
         print("Successfully connected to MongoDB!")
+        await db.artworks.create_index("title", unique=True)
     except Exception as e:
         print(f"Error connecting to MongoDB: {e}")
 

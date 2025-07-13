@@ -1,143 +1,162 @@
-# 🎨 Art Gallery API
+# 🖼️ Art Gallery API — Type Reference
 
-**Art Gallery API** — a collaborative art gallery backend built with FastAPI, GraphQL (Ariadne), and MongoDB. This project lets you create, update, and explore artworks and comments in real time!
-
----
-
-## 🚀 Features
-
-- **GraphQL API** for flexible queries and mutations
-- **MongoDB** for scalable, document-based storage
-- **Artwork & Comments** management
-- **Live reload** for development
+Welcome to the **Art Gallery API** type documentation!  
+This section describes the main types, fields, and relationships in your GraphQL schema, making it easy to understand and explore your collaborative art gallery backend.
 
 ---
 
-## 📁 Project Structure
+## 🎨 Types
+
+### `Artwork`
+Represents a single piece of art in the gallery.
+
+| Field        | Type      | Description                       | Constraints      |
+|--------------|-----------|-----------------------------------|------------------|
+| `id`         | `ID!`     | Unique identifier                 | Auto-generated   |
+| `title`      | `String!` | Title of the artwork              | **Unique**       |
+| `description`| `String`  | Description of the artwork        | Optional         |
+| `artistName` | `String!` | Name of the artist                | Required         |
+| `comments`   | `[Comment]`| List of comments for this artwork | Related by `artworkId` |
+
+---
+
+### `Comment`
+Represents a comment left on an artwork.
+
+| Field        | Type      | Description                       | Constraints      |
+|--------------|-----------|-----------------------------------|------------------|
+| `id`         | `ID!`     | Unique identifier                 | Auto-generated   |
+| `author`     | `String!` | Name of the commenter             | Required         |
+| `text`       | `String!` | The comment text                  | Required         |
+| `artworkId`  | `ID!`     | The artwork this comment belongs to| Required         |
+
+---
+
+## 🔍 Queries
+
+### `all_artworks: [Artwork]`
+Returns a list of all artworks in the gallery.
+
+### `artwork_by_id(id: ID!): Artwork`
+Returns a single artwork by its unique ID.
+
+---
+
+## ✏️ Mutations
+
+### `createArtwork(title: String!, description: String, artistName: String!): CreateArtworkPayload`
+Creates a new artwork.  
+- **title** must be unique.
+
+### `updateArtwork(id: ID!, title: String, description: String, artistName: String): UpdateArtworkPayload`
+Updates an existing artwork.
+
+### `deleteArtwork(id: ID!): DeleteArtworkPayload`
+Deletes an artwork.
+
+### `createComment(artworkId: ID!, author: String!, text: String!): CreateCommentPayload`
+Adds a comment to an artwork.
+
+### `updateComment(id: ID!, author: String, text: String): UpdateCommentPayload`
+Updates a comment.
+
+### `deleteComment(id: ID!): DeleteCommentPayload`
+Deletes a comment.
+
+---
+
+## 🧩 Example Type Usage
+
+```graphql
+query {
+  all_artworks {
+    id
+    title
+    artistName
+    description
+    comments {
+      author
+      text
+    }
+  }
+}
+```
+
+---
+
+## 🛡️ Constraints & Indexes
+
+- **Artwork.title** is unique (enforced at the database level).
+- All IDs are MongoDB ObjectIds, returned as strings.
+
+---
+
+## 🚀 Getting Started
+
+To run the Cosmic Canvas API locally with Docker Compose:
 
 ```bash
+docker-compose up --build
+```
+
+- The API will be available at [http://localhost:8000/graphql](http://localhost:8000/graphql).
+- MongoDB and Redis services are started automatically.
+
+---
+
+## 🛠️ Technologies Used
+
+- **FastAPI** — High-performance Python web framework.
+- **GraphQL (Ariadne)** — Flexible API query language.
+- **MongoDB** — NoSQL database for storing artworks and comments.
+- **Redis** — In-memory cache for fast query responses.
+- **Docker Compose** — Easy orchestration of multi-service environments.
+
+---
+
+## 🧑‍💻 Development Tips
+
+- **Hot Reload:** The API service mounts your code for instant updates.
+- **Database Indexes:** Unique indexes are created for artwork titles at startup.
+- **Caching:** Frequently accessed queries are cached in Redis for performance.
+- **Error Handling:** Duplicate artwork titles return a friendly error message.
+
+---
+
+## 🗂️ Folder Structure
+
+```
 .
-├── main.py              # FastAPI app & GraphQL schema (Strawberry)
-├── db/
-│   └── database.py      # MongoDB connection & ObjectId helpers
-├── schemas/
-│   ├── fieldsschema.py  # Pydantic models (Artwork & Comment)
-│   └── graphschema.py   # GraphQL type definitions (Strawberry)
-├── requirements.txt     # Python dependencies
-└── README.md            # You're here!
+├── main.py                # FastAPI & GraphQL entrypoint
+├── schemas/               # Pydantic and GraphQL schema definitions
+├── db/                    # Database utilities
+├── Dockerfile             # API container build instructions
+├── docker-compose.yml     # Multi-service orchestration
+└── README.md              # Project documentation
 ```
 
 ---
 
-## 🧑‍🎨 GraphQL Schema Highlights
-s
-- **Artwork**
-  - `id`, `title`, `description`, `artistName`, `comments`
-- **Comment**
-  - `id`, `author`, `text`, `artworkId`
-- **Queries**
-  - `all_artworks`, `artwork_by_id`
-- **Mutations**
-  - `createArtwork`, `updateArtwork`, `deleteArtwork`
-  - `createComment`, `updateComment`, `deleteComment`
+## 🌐 API Playground
 
-See [`schemas/graphschema.py`](schemas/graphschema.py) for full schema.
+Visit `/graphql` in your browser for an interactive GraphQL playground.  
+Try out queries and mutations, inspect types, and explore relationships.
 
 ---
 
-## 🛠️ Getting Started
+## 💡 Contributing
 
-### 1. Clone & Install
-
-```sh
-git clone https://github.com/Amir-hossein-shamsi/Art-gallery-api.git
-cd Art-gallery-api
-pip install -r requirements.txt
-```
----
-
-## 🐳 Run with Docker  
-
-```bash  
-docker-compose up --build  
-```  
-
-- **API**: [http://localhost:8000](http://localhost:8000)  
-- **GraphQL Playground**: [http://localhost:8000/graphql](http://localhost:8000/graphql)  
-  - Interact with the API using GraphQL via Apollo Server (enabled by default in development) .  
-- **MongoDB**: `localhost:27017`  
+Pull requests and issues are welcome!  
+Please follow the code style and add tests for new features.
 
 ---
 
-## 🔧 Local Development  
+## 📄 License
 
-```bash  
-uvicorn main:app --reload  
-```  
----
-
-## 📝 Example GraphQL Queries  
-
-### Get All Artworks  
-```graphql  
-query {  
-  all_artworks {  
-    id  
-    title  
-    artistName  
-    description  
-    comments {  
-      author  
-      text  
-    }  
-  }  
-}  
-```  
-
-### Create an Artwork  
-```graphql  
-mutation {  
-  createArtwork(  
-    title: "Starry Night",  
-    description: "A masterpiece",  
-    artistName: "Vincent"  
-  ) {  
-    ok  
-    artwork {  
-      id  
-      title  
-    }  
-  }  
-}  
-```  
----
-
-## 📦 Tech Stack  
-
-- **FastAPI**: High-performance API framework  
-- **Ariadne**: GraphQL schema-first implementation  
-- **MongoDB**: NoSQL database for flexible data modeling  
-- **Docker**: Containerization for reproducibility  
-- **Pydantic**: Data validation and settings management  
+This project is licensed under the MIT License.
 
 ---
 
-## 🧩 Key Files  
-
-- `main.py`: App entrypoint and GraphQL resolvers  
-- `db/database.py`: MongoDB ObjectId integration  
-- `schemas/fieldsschema.py`: Pydantic models for data validation  
-- `schemas/graphschema.py`: GraphQL schema definition  
+> "Art enables us to find ourselves and lose ourselves at the same time." — Thomas Merton
 
 ---
-
-
-## 📜 License  
-
-MIT License  
-
----
-
-> "Art enables us to find ourselves and lose ourselves at the same time." — Thomas Merton  
-
---- 
